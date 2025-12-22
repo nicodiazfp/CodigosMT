@@ -1,0 +1,84 @@
+(*Constantes*)
+
+R = 8.314;
+\[Alpha]12 = 0.23;
+\[Alpha]21 = 0.23;
+
+
+(*Parámetros de entrada*)
+T = 295.15;          (*[K]*)
+A12 = 258.44;        (*[K]*)
+A21 = 1208.6;        (*[K]*)
+
+
+(*Cálculo de tau y Gij*)
+
+\[Tau]12 = A12/T;
+\[Tau]21 = A21/T;
+G12 = Exp[-\[Alpha]12*\[Tau]12];
+G21 = Exp[-\[Alpha]21*\[Tau]21];
+
+
+(*Función \[Delta]G/RT*)
+
+\[Delta]G[x_] := 
+  Module[{GE}, 
+   GE = (1 - x)*
+     x*((G12*\[Tau]12)/(1 - x + G12*x) + (G21*\[Tau]21)/(G21*(1 - x) +
+           x));
+   GE + x*Log[x] + (1 - x)*Log[1 - x]];
+
+(*tangente común*)
+
+TangenteComun[] := Module[{xVals, tabla, DGinterp, DGDXinterp, sol},
+   xVals = Range[0.0001, 0.999, 0.0001];
+   tabla = Table[{xi, \[Delta]G[xi]}, {xi, xVals}];
+   DGinterp = Interpolation[tabla];
+   DGDXinterp[x_] := DGinterp'[x];
+   Quiet[
+    sol = FindRoot[{DGDXinterp[x1] == m, 
+       DGDXinterp[x2] == m, (DGinterp[x2] - DGinterp[x1])/(x2 - x1) ==
+         m}, {{x1, 0.023}, {x2, 0.8}, {m, 0}}, MaxIterations -> 200, 
+      WorkingPrecision -> 20]];
+   {x1, x2, m} /. sol /. Complex[a_, 0] :> a // N];
+
+{xa, xb, m} = TangenteComun[];
+
+
+(*Interpolación y función de la tangente*)
+
+
+DGinterp = 
+  Interpolation[
+   Table[{x, \[CapitalDelta]G[x]}, {x, 0.0001, 0.999, 0.0001}]];
+tangente[x_] := DGinterp[xa] + m*(x - xa);
+
+colCurva = Black;
+colTang = RGBColor[0.8, 0., 0.];  
+colPtos = Red;
+colEje = GrayLevel[0.2];
+
+Show[Plot[DGinterp[x], {x, 0, 1}, 
+  PlotStyle -> Directive[colCurva, AbsoluteThickness[4]], 
+  Frame -> True, 
+  FrameLabel -> {Style["x₁ (Etilenglicol)", 40, 
+     FontFamily -> "Times"], 
+    Style["\[CapitalDelta]G/RT", 40, FontFamily -> "Times"]}, 
+  Ticks -> {Table[i, {i, 0, 1, 0.1}], Automatic}, 
+  BaseStyle -> {FontFamily -> "Times", 40}, 
+  AxesStyle -> Directive[colEje, AbsoluteThickness[2.5]], 
+  FrameStyle -> Directive[colEje, AbsoluteThickness[2.5]], 
+  ImageSize -> 1300], 
+ Graphics[{Directive[colTang, Dashed, AbsoluteThickness[3]], 
+   Line[{{xa, DGinterp[xa]}, {xb, DGinterp[xb]}}]}], 
+ Graphics[{Directive[colPtos, PointSize[0.022]], 
+   Point[{xa, DGinterp[xa]}], Point[{xb, DGinterp[xb]}]}], 
+ PlotRange -> All]
+
+
+
+(*Resultados*)
+
+Print["Valores de equilibrio:"];
+Print["x₁ (fase A) = ", NumberForm[xa, {7, 6}]];
+Print["x₁ (fase B) = ", NumberForm[xb, {7, 6}]];
