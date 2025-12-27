@@ -1,41 +1,29 @@
-ClearAll["Global`*"];
 colAxis = Black;
 colGridA = GrayLevel[.90];
 colGridB = GrayLevel[.82];
 colGridC = GrayLevel[.93];
 colSL = Red;
-
 niceFont = "Times";
-
 fsTick = 28;
 fsAxisLab = 55;
 fsTag = 34;
-
-
 thBorder = 3.0;
 thGrid = 0.8;
 thRays = 1.6;
 thSL = 1.8;
-
 ptSizeBin = 14;
 ptSizeMain = 16;
-
 baseStyle = {FontFamily -> niceFont, FontSize -> fsTick};
-fmt01[x_] := 
-  ToString@NumberForm[x, {2, 1}, NumberPadding -> {"", "0"}];
-
-
+fmt01[x_] := ToString@NumberForm[x, {2, 1}, NumberPadding -> {"", "0"}];
 midX2 = {0.5, 0.0};  
 midX3 = {0.0, 0.5};  
-
-
 offTickX3 = {-42, 0};
 offTickX2 = {0, -42};
 offAxisX3 = {-140, 0};
 offAxisX2 = {0, -120};
 
 
-(*Triángulo base {x2,x3}*)
+Triángulo de fases {x2,x3}:
 
 rightBase = 
   Graphics[{EdgeForm[Directive[colAxis, AbsoluteThickness[thBorder]]],
@@ -62,7 +50,7 @@ rightGrid =
       0.1}]}];
 
 
-(*Datos binarios*)
+Datos ELL binario:
 
 x1alpha12 = 0.0115837;
 x1beta12 = 0.76801;
@@ -82,18 +70,17 @@ pt13b = {0, 1 - x1beta13};
 pt23a = {x2alpha23, 1 - x2alpha23};
 pt23b = {x2beta23, 1 - x2beta23};
 
-bins = <|"12" -> {x1alpha12, x1beta12}, "13" -> {x1alpha13, x1beta13},
-    "23" -> {x2alpha23, x2beta23}|>;
+bins = <|"12" -> {x1alpha12, x1beta12}, "13" -> {x1alpha13, x1beta13}, "23" -> {x2alpha23, x2beta23}|>;
 
 
-(*Rectas internas sl1,sl2,sl3*)
+Rectas internas de datos binarios:
 
 sl1 = {pt12a, pt13a};
 sl2 = {pt12b, pt23a};
 sl3 = {pt13b, pt23b};
 
 
-(*Punto global Z y vértices*)
+Z y Vértices:
 
 zTern = {0.4, 0.3, 0.3};   
 {xz, yz} = N@{zTern[[2]], zTern[[3]]};
@@ -106,7 +93,9 @@ Q1 = {xz/(xz + yz + eps), yz/(xz + yz + eps)};
 Q2 = {0, yz/Max[eps, 1 - xz]};
 Q3 = {xz/Max[eps, 1 - yz], 0};
 
-ClearAll[rayWithSegment];
+
+Creo las rectas de P:
+
 
 rayWithSegment[v_, q_, a_, b_, tol_ : 1.*^-12] := 
   Module[{A = N[q - v], B = N[b - a], rhs = N[a - v], M, st, s, t}, 
@@ -131,21 +120,18 @@ offP = <|"P1" -> {28, 22}, "P2" -> {-20, 22}, "P3" -> {28, -30}|>;
 offQ = <|"Q1" -> {28, -30}, "Q2" -> {28, -30}, "Q3" -> {0, -20}|>;
 
 
-marks = Graphics[{(*sl_i en rojo*)
-    Directive[colSL, AbsoluteThickness[thSL]], 
-    Line /@ {sl1, sl2, sl3},(*rayos a Q_i*)
-    Directive[colAxis, AbsoluteThickness[thRays]], 
-    Line /@ {{v1, Q1}, {v2, Q2}, {v3, Q3}},(*puntos binarios*)
-    Directive[colAxis, AbsolutePointSize[ptSizeBin]], 
-    Point[{pt12a, pt12b, pt13a, pt13b, pt23a, pt23b}],(*Z global*)
+marks = Graphics[{Directive[colSL, AbsoluteThickness[thSL]], 
+    Line /@ {sl1, sl2, sl3},Directive[colAxis, AbsoluteThickness[thRays]], 
+    Line /@ {{v1, Q1}, {v2, Q2}, {v3, Q3}},Directive[colAxis, AbsolutePointSize[ptSizeBin]], 
+    Point[{pt12a, pt12b, pt13a, pt13b, pt23a, pt23b}],
     Directive[colAxis, AbsolutePointSize[ptSizeMain]], 
     Point[{xz, yz}], 
     Text[Style["Z", FontFamily -> niceFont, FontSize -> fsTag, Bold], 
-     Offset[offZ, {xz, yz}]],(*P_i*)
+     Offset[offZ, {xz, yz}]],
     Directive[colAxis, AbsolutePointSize[ptSizeMain]], Point[Ps], 
     Map[With[{lab = #, p = Ps[[First@FirstPosition[labelsP, #]]]}, 
        Text[Style[lab, FontFamily -> niceFont, FontSize -> fsTag, 
-         Bold], Offset[offP[lab], p]]] &, labelsP],(*Q_i*)
+         Bold], Offset[offP[lab], p]]] &, labelsP],
     Directive[colAxis, AbsolutePointSize[ptSizeMain]], 
     Point /@ {Q1, Q2, Q3}, {Text[
       Style["Q1", FontFamily -> niceFont, FontSize -> fsTag - 2, 
@@ -158,7 +144,7 @@ marks = Graphics[{(*sl_i en rojo*)
 Show[rightBase, rightGrid, marks, 
  PlotRange -> {{-0.08, 1.08}, {-0.08, 1.08}}, 
  ImagePadding -> {{170, 60}, {140, 
-    70}},(*más margen para x3 y x2 grandes*)ImageSize -> 1400]
+    70}},ImageSize -> 1400]
 
 
 Z = {xz, yz};
@@ -168,9 +154,11 @@ p1 = dist[Z, Q1]/dist[P1, Q1];
 p2 = dist[Z, Q2]/dist[P2, Q2];
 p3 = dist[Z, Q3]/dist[P3, Q3];
 
-pvals = <|"p1" -> p1, "p2" -> p2, "p3" -> p3|>;
-order = Ordering[{p1, p2, p3}, -2];
-dominantPair = Sort[order];
+pvalores = <|"p1" -> p1, "p2" -> p2, "p3" -> p3|>;
+orden = Ordering[{p1, p2, p3}, -2];
+dominantPair = Sort[orden];
 
-pvals
+
+
+pvalores
 dominantPair
