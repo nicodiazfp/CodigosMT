@@ -1,0 +1,41 @@
+Equilibrio líquido-líquido binariro
+
+
+Constantes:
+
+
+\[Alpha]12 = 0.19;
+a12 = 864.36;
+a21 = 63.338;
+
+
+Temperatura fija:
+
+T = 295.15;
+
+
+Relaciones:
+
+\[Tau]12 = a12/T;
+\[Tau]21 = a21/T;
+G12 = Exp[-\[Alpha]12*\[Tau]12];
+G21 = Exp[-\[Alpha]12*\[Tau]21];
+
+
+Solución Sistema de ecuaciones \[Gamma]-\[Gamma]:
+
+
+FindRoot[{Log[
+     x1a] + (1 - 
+        x1a)^2*(\[Tau]21*(G21/(x1a + (1 - x1a)*G21))^2 + (\[Tau]12*
+         G21/((1 - x1a) + x1a*G12)^2)) == 
+   Log[x1b] + (x1a)^2*(\[Tau]21*(G21/((1 - x1a) + 
+             x1a*G21))^2 + (\[Tau]12*G21/(x1a + (1 - x1a)*G12)^2)), 
+  Log[(1 - 
+       x1a)] + (1 - 
+        x1b)^2*(\[Tau]21*(G21/(x1b + (1 - x1b)*G21))^2 + (\[Tau]12*
+         G21/((1 - x1b) + x1b*G12)^2)) == 
+   Log[(1 - 
+       x1b)] + (x1b)^2*(\[Tau]21*(G21/((1 - x1b) + 
+             x1b*G21))^2 + (\[Tau]12*
+         G21/(x1b + (1 - x1b)*G12)^2))}, {x1a, 0.27}, {x1b, 0.93}]
