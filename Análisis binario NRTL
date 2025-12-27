@@ -1,17 +1,18 @@
-(*Constantes*)
+Constantes:
 
 R = 8.314;
 \[Alpha]12 = 0.23;
 \[Alpha]21 = 0.23;
 
 
-(*Parámetros de entrada*)
+Parámetros de entrada:
+
 T = 295.15;          (*[K]*)
 A12 = 258.44;        (*[K]*)
 A21 = 1208.6;        (*[K]*)
 
 
-(*Cálculo de tau y Gij*)
+Cálculo de tau y Gi:
 
 \[Tau]12 = A12/T;
 \[Tau]21 = A21/T;
@@ -19,7 +20,7 @@ G12 = Exp[-\[Alpha]12*\[Tau]12];
 G21 = Exp[-\[Alpha]21*\[Tau]21];
 
 
-(*Función \[Delta]G/RT*)
+Función \[Delta]G/RT:
 
 \[Delta]G[x_] := 
   Module[{GE}, 
@@ -28,7 +29,7 @@ G21 = Exp[-\[Alpha]21*\[Tau]21];
            x));
    GE + x*Log[x] + (1 - x)*Log[1 - x]];
 
-(*tangente común*)
+tangente común:
 
 TangenteComun[] := Module[{xVals, tabla, DGinterp, DGDXinterp, sol},
    xVals = Range[0.0001, 0.999, 0.0001];
@@ -45,7 +46,7 @@ TangenteComun[] := Module[{xVals, tabla, DGinterp, DGDXinterp, sol},
 {xa, xb, m} = TangenteComun[];
 
 
-(*Interpolación y función de la tangente*)
+Interpolación y función de la tangente:
 
 
 DGinterp = 
@@ -77,7 +78,7 @@ Show[Plot[DGinterp[x], {x, 0, 1},
 
 
 
-(*Resultados*)
+Resultados:
 
 Print["Valores de equilibrio:"];
 Print["x₁ (fase A) = ", NumberForm[xa, {7, 6}]];
