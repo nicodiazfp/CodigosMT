@@ -1,0 +1,126 @@
+Equilibrio UNIFAC:
+
+Datos:
+
+T = 295.15;           (*K*)
+zCoord = 10;         (*número de coordinación UNIFAC*)
+
+
+Subgrupos
+
+Rk = {0.9011, 0.6744, 1.0000};
+Qk = {0.8480, 0.5400, 1.2000};
+
+Main group:
+
+mainG = {1, 1, 5}; 
+
+Conteo de subgrupos:
+
+nu = {{0, 2, 2},{1, 11, 1}};
+nc = 2;
+ng = 3;
+
+
+
+A[m_, n_] := Switch[{m, n}, {1, 5}, 986.5, {5, 1}, 156.4, _, 0.];
+psi = Table[Exp[-A[mainG[[m]], mainG[[k]]]/T], {m, 1, ng}, {k, 1, ng}];
+
+Parámetros estructurales de cada componente:
+
+
+r = nu . Rk;         (*r_i*)
+q = nu . Qk;         (*q_i*)
+
+l = 0.5*zCoord*(r - q) - (r - 1.);   (*l_i*)
+
+
+Parte residual de grupos:
+
+
+lnGammaGroup[X_List] := Module[{thetaG}, thetaG = (Qk*X)/Total[Qk*X];
+   Table[
+    Qk[[k]]*(1 - Log[Sum[thetaG[[m]]*psi[[m, k]], {m, 1, ng}]] - 
+       Sum[thetaG[[m]]*
+         psi[[k, m]]/Sum[thetaG[[n]]*psi[[n, m]], {n, 1, ng}], {m, 1, 
+         ng}]), {k, 1, ng}]];
+
+lnGammaGroupPure = 
+  Table[With[{Xi = nu[[i]]/Total[nu[[i]]]}, lnGammaGroup[Xi]], {i, 1, 
+    nc}];
+
+
+gammaUNIFAC[x1_?NumericQ] := 
+  Module[{x, phi, theta, sumxl, lnGamC, numX, X, lnGmix, lnGamR}, 
+   x = {x1, 1 - x1};
+phi = (r*x)/Total[r*x];
+   theta = (q*x)/Total[q*x];
+   sumxl = Total[x*l];
+   lnGamC = 
+    Table[Log[phi[[i]]/x[[i]]] + 
+      0.5*zCoord*q[[i]]*Log[theta[[i]]/phi[[i]]] + 
+      l[[i]] - (phi[[i]]/x[[i]])*sumxl, {i, 1, nc}];
+   numX = Transpose[nu] . x;
+   X = numX/Total[numX];
+   lnGmix = lnGammaGroup[X];
+   lnGamR = 
+    Table[Sum[nu[[i, k]]*(lnGmix[[k]] - lnGammaGroupPure[[i, k]]), {k, 1, 
+       ng}], {i, 1, nc}];
+   Exp[lnGamC + lnGamR]];
+
+
+\[Delta]G[x_] := 
+  Module[{x1 = x, x2 = 1 - x, gam}, 
+   gam = gammaUNIFAC[x1];(*{\[Gamma]1,\[Gamma]2}*)
+   x1*Log[x1] + x2*Log[x2] + x1*Log[gam[[1]]] + x2*Log[gam[[2]]]];
+
+
+
+TangenteComun[] := 
+  Module[{xVals, tabla, DGinterpLocal, DGDXinterp, sol}, 
+   xVals = Range[0.0001, 0.999, 0.0001];
+   tabla = Table[{xi, \[Delta]G[xi]}, {xi, xVals}];
+   DGinterpLocal = Interpolation[tabla];
+   DGDXinterp[x_] := DGinterpLocal'[x];
+   Quiet[
+    sol = FindRoot[{DGDXinterp[x1] == m, 
+       DGDXinterp[x2] == 
+        m, (DGinterpLocal[x2] - DGinterpLocal[x1])/(x2 - x1) == 
+        m}, {{x1, 0.05}, {x2, 0.9}, {m, 0}}, MaxIterations -> 200, 
+      WorkingPrecision -> 20]];
+   {x1, x2, m} /. sol /. Complex[a_, 0] :> a // N];
+
+{xa, xb, m} = TangenteComun[];
+
+
+DGinterp = 
+  Interpolation[
+   Table[{x, \[Delta]G[x]}, {x, 0.0001, 0.999, 0.0001}]];
+
+tangente[x_] := DGinterp[xa] + m*(x - xa);
+
+colCurva = Black;
+colTang = RGBColor[0.8, 0., 0.];
+colPtos = Red;
+colEje = GrayLevel[0.2];
+
+Show[Plot[DGinterp[x], {x, 0, 1}, 
+  PlotStyle -> Directive[colCurva, AbsoluteThickness[4]], 
+  Frame -> True, 
+  FrameLabel -> {Style["x₁ (Etilenglicol)", 40, 
+     FontFamily -> "Times"], 
+    Style["\[CapitalDelta]G/RT", 40, FontFamily -> "Times"]}, 
+  Ticks -> {Table[i, {i, 0, 1, 0.1}], Automatic}, 
+  BaseStyle -> {FontFamily -> "Times", 40}, 
+  AxesStyle -> Directive[colEje, AbsoluteThickness[2.5]], 
+  FrameStyle -> Directive[colEje, AbsoluteThickness[2.5]], 
+  ImageSize -> 1300], 
+ Graphics[{Directive[colTang, Dashed, AbsoluteThickness[3]], 
+   Line[{{xa, DGinterp[xa]}, {xb, DGinterp[xb]}}]}], 
+ Graphics[{Directive[colPtos, PointSize[0.022]], 
+   Point[{xa, DGinterp[xa]}], Point[{xb, DGinterp[xb]}]}], 
+ PlotRange -> All]
+
+Print["Valores de equilibrio (UNIFAC, EG/1-dodecanol):"];
+Print["x₁ (fase A) = ", NumberForm[xa, {7, 6}]];
+Print["x₁ (fase B) = ", NumberForm[xb, {7, 6}]];
