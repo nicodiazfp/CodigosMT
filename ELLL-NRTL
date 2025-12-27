@@ -72,8 +72,8 @@ Step3Dom[feed_List, bins_Association] :=
     n1II, n2II, lI, lII, LI0, LII0, x1Poor13, x1Rich13, x2Poor23, 
     x2Rich23, x3PoorDom1, x3PoorDom2, K3, f3loc, n3I, n3II, 
     sol}, {f1, f2, f3} = N@feed;
-   F12 = f1 + f2;
-   {x1Poor12, x1Rich12} = bins["12"];
+   F12 = f1 + f2; 
+   {x1Poor12, x1Rich12} = bins["12"] (*Aquí debo fijar el par dominante*);
    zDom1 = f1/F12;
    h = (zDom1 - x1Poor12)/(x1Rich12 - x1Poor12);
    n1I = h*F12*x1Rich12;
