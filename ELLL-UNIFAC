@@ -1,0 +1,436 @@
+Datos generales:
+
+
+T = 295.15;      (*K*)
+zCoord = 10.;    (*UNIFAC z=10*)
+
+compNames = {"Etilenglicol", "1-Dodecanol", "Nitrometano"};
+
+Subgrupos Rk,Qk:
+
+subGroups = {"CH3", "CH2", "OH", "DOH", "CH3NO2"};
+
+Rk = {0.9011, 0.6744, 1.0000, 2.4088, 2.0086};
+Qk = {0.8480, 0.5400, 1.2000, 2.2480, 1.8680};
+
+(*main groups:CH3/CH2->1;OH->5;DOH->31;CH3NO2->26*)
+mgIndex = {1, 1, 5, 31, 26};
+
+ng = Length[subGroups];
+
+(*Descomposición en subgrupos:vComp[[i,k]]=\[Nu]_k^(i)*)
+
+(*(1) Etilenglicol HO-CH2-CH2-OH->1*DOH*)
+v1 = {0, 0, 0, 1, 0};
+
+(*(2) 1-Dodecanol HO-CH2-(CH2)10-CH3->1*CH3+11*CH2+1*OH*)
+v2 = {1, 11, 1, 0, 0};
+
+(*(3) Nitrometano CH3NO2->1*CH3NO2*)
+v3 = {0, 0, 0, 0, 1};
+
+vComp = {v1, v2, v3};
+nc = Length[vComp];
+
+
+ri = Table[Sum[vComp[[i, k]]*Rk[[k]], {k, 1, ng}], {i, 1, nc}];
+qi = Table[Sum[vComp[[i, k]]*Qk[[k]], {k, 1, ng}], {i, 1, nc}];
+
+
+
+mgList = DeleteDuplicates[mgIndex];
+nMG = Length[mgList];
+mgPos = AssociationThread[mgList -> Range[nMG]];
+
+AijMG = ConstantArray[0., {nMG, nMG}];
+setAij[iMG_Integer, jMG_Integer, a_?NumericQ] := 
+  Module[{ii = mgPos[iMG], jj = mgPos[jMG]}, AijMG[[ii, jj]] = N@a;];
+
+a_mn según Main groups:
+(*1-5*)
+setAij[1, 5, 986.5];
+setAij[5, 1, 156.4];
+
+(*1-26*)
+setAij[1, 26, 661.5];
+setAij[26, 1, -32.69];
+
+(*5-26*)
+setAij[5, 26, 256.5];
+setAij[26, 5, 261.6];
+
+If[MemberQ[mgList, 31],(*1-31*)setAij[1, 31, 3025.0];
+  setAij[31, 1, 139.93];
+  (*5-31*)setAij[5, 31, -318.93];
+  setAij[31, 5, 267.6];
+  (*26-31*)setAij[26, 31, 139.822];
+  setAij[31, 26, 481.348];];
+
+(*Psi main groups*)
+psiKG = Table[
+   Module[{mgm = mgIndex[[m]], mgk = mgIndex[[k]], im, ik}, 
+    im = mgPos[mgm]; ik = mgPos[mgk];
+    Exp[-AijMG[[im, ik]]/T]], {m, 1, ng}, {k, 1, ng}];
+
+
+
+
+
+
+
+lnGamma_k en soluciones puras:
+
+
+
+lnGammaGroupPure = 
+  Table[Module[{Xk, ThetaK, denomM}, 
+    Xk = N@Table[vComp[[i, k]], {k, 1, ng}];
+    Xk = Xk/Total[Xk];
+    ThetaK = Qk*Xk; ThetaK = ThetaK/Total[ThetaK];
+    denomM = 
+     Table[Sum[ThetaK[[n]]*psiKG[[n, m]], {n, 1, ng}], {m, 1, ng}];
+    Table[
+     Qk[[k]]*(1 - Log[Sum[ThetaK[[m]]*psiKG[[m, k]], {m, 1, ng}]] - 
+        Sum[ThetaK[[m]]*psiKG[[k, m]]/denomM[[m]], {m, 1, ng}]), {k, 
+      1, ng}]], {i, 1, nc}];
+
+
+lnGamma_i+\[Delta]G/RT:
+
+lnGammaUNIFAC[i_, x_List] /; VectorQ[x, NumericQ] := 
+  Module[{xloc, phi, theta, li, lnComb, Xk, ThetaK, denomM, 
+    lnGroupMix, lnRes}, xloc = N[x]/Total[x];
+  phi = (ri*xloc)/Total[ri*xloc];
+   theta = (qi*xloc)/Total[qi*xloc];
+   li = (zCoord/2.)*(ri - qi) - (ri - 1.);
+   lnComb = 
+    Table[Log[phi[[j]]/xloc[[j]]] + (zCoord/2.)*qi[[j]]*
+       Log[theta[[j]]/phi[[j]]] + 
+      li[[j]] - (phi[[j]]/xloc[[j]])*
+       Sum[xloc[[m]]*li[[m]], {m, 1, nc}], {j, 1, nc}];
+   
+   Xk = Table[Sum[vComp[[j, k]]*xloc[[j]], {j, 1, nc}], {k, 1, ng}];
+   Xk = Xk/Total[Xk];
+   ThetaK = Qk*Xk; ThetaK = ThetaK/Total[ThetaK];
+   denomM = 
+    Table[Sum[ThetaK[[n]]*psiKG[[n, m]], {n, 1, ng}], {m, 1, ng}];
+   lnGroupMix = 
+    Table[Qk[[
+       k]]*(1 - Log[Sum[ThetaK[[m]]*psiKG[[m, k]], {m, 1, ng}]] - 
+        Sum[ThetaK[[m]]*psiKG[[k, m]]/denomM[[m]], {m, 1, ng}]), {k, 
+      1, ng}];
+   lnRes = 
+    Sum[vComp[[i, 
+       k]]*(lnGroupMix[[k]] - lnGammaGroupPure[[i, k]]), {k, 1, ng}];
+   lnComb[[i]] + lnRes];
+
+
+
+DGphase[x_List] := 
+  Module[{eps = 10.^-12, xloc = N[x]}, 
+   If[Abs[Total[xloc] - 1.] > 10.^-8 || Min[xloc] <= eps, 10.^8, 
+    Sum[xloc[[i]]*(Log[xloc[[i]]] + lnGammaUNIFAC[i, xloc]), {i, 1, 
+      nc}]]];
+
+DG3[x1_?NumericQ, x2_?NumericQ] := 
+  Module[{x3 = 1. - x1 - x2}, DGphase[{x1, x2, x3}]];
+DG3safe[x1_?NumericQ, x2_?NumericQ] := 
+  Module[{x3 = 1. - x1 - x2}, 
+   If[x1 <= 0. || x2 <= 0. || x3 <= 0., Indeterminate, DG3[x1, x2]]];
+
+
+DGtotalFlows2[nI_List, feed_List] /; VectorQ[nI, NumericQ] := 
+  Module[{eps = 10.^-10, nII, L1, L2, F, xI, xII, gI, gII}, 
+   nII = N@feed - N@nI;
+   {L1, L2} = Total /@ {nI, nII}; F = L1 + L2;
+   If[Min[Join[nI, nII, {L1, L2}]] <= eps, Return[10.^8]];
+   xI = nI/L1; xII = nII/L2;
+   If[Min[Join[xI, xII]] <= eps, Return[10.^8]];
+   gI = DGphase[xI]; gII = DGphase[xII];
+   (L1*gI + L2*gII)/F];
+
+DGtotalFlows3[nI_List, nII_List, nIII_List] /; 
+   And[VectorQ[nI, NumericQ], VectorQ[nII, NumericQ], 
+    VectorQ[nIII, NumericQ]] := 
+  Module[{eps = 10.^-10, L1, L2, L3, F, xI, xII, xIII, gI, gII, 
+    gIII}, {L1, L2, L3} = Total /@ {nI, nII, nIII}; F = L1 + L2 + L3;
+   If[Min[Join[nI, nII, nIII, {L1, L2, L3}]] <= eps, Return[10.^8]];
+   xI = nI/L1; xII = nII/L2; xIII = nIII/L3;
+   If[Min[Join[xI, xII, xIII]] <= eps, Return[10.^8]];
+   gI = DGphase[xI]; gII = DGphase[xII]; gIII = DGphase[xIII];
+   (L1*gI + L2*gII + L3*gIII)/F];
+
+
+Datos binarios:
+
+x1alpha12 = 0.229891; x1beta12 = 0.959539;
+x1alpha13 = 0.080996; x1beta13 = 0.787774;
+x2alpha23 = 0.141433; x2beta23 = 0.733618;
+
+bins = <|"12" -> {x1alpha12, x1beta12}, "13" -> {x1alpha13, x1beta13},
+    "23" -> {x2alpha23, x2beta23}|>;
+
+
+
+Step3Dom12[feed_List, bins_Association, K3init_ : 1.] := 
+  Module[{f1, f2, f3, F12, x1Poor12, x1Rich12, zDom1, h, n1I, n2I, 
+    n1II, n2II, LI0, LII0, n3I, n3II, K3 = N@K3init, eps = 10.^-10, 
+    sol}, {f1, f2, f3} = N@feed; F12 = f1 + f2;
+   {x1Poor12, x1Rich12} = bins["12"];
+   zDom1 = f1/F12;
+   h = (zDom1 - x1Poor12)/(x1Rich12 - x1Poor12);
+   h = Clip[h, {0.01, 0.99}];
+   (*fase I:rica en 1;fase II:pobre en 1 (en el sub-sistema 1-2)*)
+   n1I = h*F12*x1Rich12; n2I = h*F12 - n1I;
+   n1II = (1 - h)*F12*x1Poor12; n2II = (1 - h)*F12 - n1II;
+   LI0 = n1I + n2I; LII0 = n1II + n2II;
+
+   If[Abs[K3 - 1.] < 10.^-12, n3I = f3*LI0/(LI0 + LII0); 
+    n3I = Clip[n3I, {eps, f3 - eps}];, 
+    sol = Quiet@
+      Check[FindRoot[((n3I/(LI0 + n3I))/((f3 - n3I)/(LII0 + f3 - 
+                n3I))) - K3 == 0, {n3I, f3/2., eps, 
+         f3 - eps}], $Failed];
+    n3I = If[sol === $Failed, f3*LI0/(LI0 + LII0), n3I /. sol];
+    n3I = Clip[n3I, {eps, f3 - eps}];];
+   n3II = f3 - n3I;
+   <|"h" -> h, "lI" -> {n1I, n2I, n3I}, "lII" -> {n1II, n2II, n3II}, 
+    "K3_init" -> K3|>];
+
+
+Step4LLE[feed_List, step3_Association] := 
+  Module[{f = N@feed, eps = 10.^-10, nI0, vars, cons, obj, sol, nI, 
+    nII, xI, xII}, nI0 = N@step3["lI"];
+   vars = {n1I, n2I, n3I};
+   obj = DGtotalFlows2[{n1I, n2I, n3I}, f];
+   cons = {eps <= n1I <= f[[1]] - eps, eps <= n2I <= f[[2]] - eps, 
+     eps <= n3I <= f[[3]] - eps};
+   sol = 
+    Quiet@NMinimize[{obj, cons}, vars, 
+      Method -> {"NelderMead", 
+        "InitialPoints" -> {{n1I, n2I, n3I} -> nI0}}, 
+      MaxIterations -> 500];
+   nI = vars /. Last[sol];
+   nII = f - nI;
+   xI = nI/Total[nI];
+   xII = nII/Total[nII];
+
+
+
+Step5LLLE[feed_List, step4_Association, bins_Association] := 
+  Module[{F, z, xI, xII, xIII, A, b, phi, phiSafe, L1, L2, L3, lI, 
+    lII, lIII, x13cand, x23cand, x13rich3, x23rich3, x3seed}, 
+   F = Total[N@feed];
+   z = N@feed/F;
+   xI = N@step4["xI"];
+   x13cand = {{bins["13"][[1]], 0., 
+      1. - bins["13"][[1]]}, {bins["13"][[2]], 0., 
+      1. - bins["13"][[2]]}};
+   x23cand = {{0., bins["23"][[1]], 1. - bins["23"][[1]]}, {0., 
+      bins["23"][[2]], 1. - bins["23"][[2]]}};
+   x13rich3 = First@MaximalBy[x13cand, #[[3]] &];
+   x23rich3 = First@MaximalBy[x23cand, #[[3]] &];
+   x3seed = x13rich3 + x23rich3;
+   x3seed = x3seed/Total[x3seed];
+   xIII = 0.20 xI + 0.20 xII + 0.60 x3seed;
+   xIII = xIII/Total[xIII];
+   
+   A = {{xI[[1]], xII[[1]], xIII[[1]]}, {xI[[2]], xII[[2]], 
+      xIII[[2]]}, {1., 1., 1.}};
+   b = {z[[1]], z[[2]], 1.};
+   phi = Quiet@Check[LinearSolve[A, b], $Failed];
+   phiSafe = 
+    If[phi === $Failed || ! VectorQ[phi, NumericQ] || 
+      Min[phi] < 0., {0.4, 0.3, 0.3}, phi];
+   phiSafe = phiSafe/Total[phiSafe];
+   {L1, L2, L3} = phiSafe*F;
+   lI = L1*xI; lII = L2*xII; lIII = L3*xIII;
+   <|"phi" -> phiSafe, "lI" -> lI, "lII" -> lII, "lIII" -> lIII, 
+    "xI" -> xI, "xII" -> xII, "xIII" -> xIII|>];
+
+
+Step6LLLE[feed_List, step5_Association, delta_ : 0.01, 
+   phimin_ : 0.05] := 
+  Module[{f = N@feed, F, eps = 10.^-10, nI0, nII0, vars, nIII, xI, 
+    xII, xIII, cons, obj, sol, nI, nII, nIIIval, phi, xIval, xIIval, 
+    xIIIval}, F = Total[f];
+   nI0 = N@step5["lI"];
+   nII0 = N@step5["lII"];
+   vars = {n1I, n2I, n3I, n1II, n2II, n3II};
+   nIII := {f[[1]] - n1I - n1II, f[[2]] - n2I - n2II, 
+     f[[3]] - n3I - n3II};
+   xI := {n1I, n2I, n3I}/(n1I + n2I + n3I);
+   xII := {n1II, n2II, n3II}/(n1II + n2II + n3II);
+   xIII := nIII/Total[nIII];
+   obj = DGtotalFlows3[{n1I, n2I, n3I}, {n1II, n2II, n3II}, nIII];
+   cons = eps <= n1I <= f[[1]] - eps, 
+     eps <= n2I <= f[[2]] - eps, eps <= n3I <= f[[3]] - eps, 
+     eps <= n1II <= f[[1]] - eps, eps <= n2II <= f[[2]] - eps, 
+     eps <= n3II <= f[[3]] - eps,(*fase III positiva*)
+     eps <= f[[1]] - n1I - n1II <= f[[1]] - eps, 
+     eps <= f[[2]] - n2I - n2II <= f[[2]] - eps, 
+     eps <= f[[3]] - n3I - n3II <= 
+      f[[3]] - eps,(n1I + n2I + n3I)/F >= 
+      phimin, (n1II + n2II + n3II)/F >= phimin, 
+     Total[nIII]/F >= phimin,
+     Norm[xI - xII] >= delta, Norm[xI - xIII] >= delta, 
+     Norm[xII - xIII] >= delta};
+   sol = 
+    Quiet@NMinimize[{obj, cons}, vars, 
+      Method -> {"DifferentialEvolution", 
+        "InitialPoints" -> {Thread[vars -> Join[nI0, nII0]]}}, 
+      MaxIterations -> 400];
+   nI = {n1I, n2I, n3I} /. Last[sol];
+   nII = {n1II, n2II, n3II} /. Last[sol];
+   nIIIval = f - nI - nII;
+   xIval = nI/Total[nI];
+   xIIval = nII/Total[nII];
+   xIIIval = nIIIval/Total[nIIIval];
+   phi = (Total /@ {nI, nII, nIIIval})/F;
+
+
+plano
+
+
+  step6["xI"][[{1, 2}]];
+{x1II, x2II} = step6["xII"][[{1, 2}]];
+{x1III, x2III} = step6["xIII"][[{1, 2}]];
+
+gI = DG3[x1I, x2I];
+gII = DG3[x1II, x2II];
+gIII = DG3[x1III, x2III];
+
+{aNum, b1Num, b2Num} = {a, b1, b2} /. 
+   First@Solve[{a + b1 x1I + b2 x2I == gI, 
+      a + b1 x1II + b2 x2II == gII, 
+      a + b1 x1III + b2 x2III == gIII}, {a, b1, b2}];
+
+plano[x1_, x2_] := aNum + b1Num x1 + b2Num x2;
+
+
+deltaPlot = 10.^-6;
+labelStyle = {FontFamily -> "Times", FontSize -> 50};
+tickStyle = {FontFamily -> "Times", FontSize -> 50};
+
+surf = Plot3D[DG3safe[x1, x2], {x1, 0, 1}, {x2, 0, 1}, 
+   RegionFunction -> 
+    Function[{x1, x2, z}, 
+     x1 >= deltaPlot && x2 >= deltaPlot && x1 + x2 <= 1 - deltaPlot], 
+   Mesh -> None, PlotRange -> All, 
+   ColorFunction -> "GreenBrownTerrain", ColorFunctionScaling -> True,
+    AxesLabel -> {Style["x1", labelStyle], Style["x2", labelStyle], 
+     Style["\[CapitalDelta]G/RT", labelStyle]}, 
+   TicksStyle -> tickStyle, BaseStyle -> tickStyle, 
+   BoxRatios -> {1, 1, 0.6}, ImageSize -> 2000];
+
+
+planePlot = 
+  Plot3D[plano[x1, x2], {x1, 0, 1}, {x2, 0, 1}, 
+   RegionFunction -> 
+    Function[{x1, x2, z}, 
+     x1 >= deltaPlot && x2 >= deltaPlot && x1 + x2 <= 1 - deltaPlot], 
+   Mesh -> None, PlotRange -> All, 
+   PlotStyle -> Directive[GrayLevel[0.1], Opacity[0.15]], 
+   BoxRatios -> {1, 1, 0.6}, ImageSize -> 2000];
+
+pts = Graphics3D[{{colI, AbsolutePointSize[22], Point[{x1I, x2I, gI}],
+      Text[Style["I", 30, Bold, colI, Background -> White], {x1I, x2I,
+        gI + 0.05}]}, {colII, AbsolutePointSize[22], 
+     Point[{x1II, x2II, gII}], 
+     Text[Style["II", 30, Bold, colII, Background -> White], {x1II, 
+       x2II, gII + 0.05}]}, {colIII, AbsolutePointSize[22], 
+     Point[{x1III, x2III, gIII}], 
+     Text[Style["III", 30, Bold, colIII, Background -> White], {x1III,
+        x2III, gIII + 0.05}]}}];
+
+
+Show[surf, planePlot, pts, ImageSize -> 2000]
+
+
+diagrama:
+
+
+toXY[{x1_, x2_, x3_}] := {x2, x3};
+
+niceFont = "TeX Gyre Pagella";
+fsTick = 30;
+fsAxis = 30;
+fsTag = 28;
+
+colBorder = GrayLevel[0.10];
+colTicks = GrayLevel[0.20];
+colGridMaj = GrayLevel[0.82];
+colGridMin = GrayLevel[0.90];
+
+colTie = Directive[RGBColor[0.85, 0.10, 0.10], AbsoluteThickness[3.0]];
+colI = RGBColor[0.85, 0.10, 0.10];
+colII = RGBColor[0.10, 0.35, 0.85];
+colIII = RGBColor[0.10, 0.60, 0.20];
+
+fmt01[x_] := 
+  ToString@NumberForm[x, {2, 1}, NumberPadding -> {"", "0"}];
+
+
+(*toXY[comp_List]:={comp[[2]],comp[[3]]};
+
+
+ternaryBase = 
+  Graphics[{EdgeForm[Directive[colBorder, AbsoluteThickness[2.5]]], 
+    FaceForm[None], 
+    Polygon[{{0, 1}, {0, 0}, {1, 0}}],(*ticks menos cargados*)
+    Table[{colTicks, 
+      Text[Style[fmt01[j], fsTick, niceFont, colTicks], {-0.035, 
+        j}, {1, 0}], 
+      Text[Style[fmt01[j], fsTick, niceFont, 
+        colTicks], {j, -0.035}, {0, 1}]}, {j, 0.2, 0.8, 
+      0.2}],(*etiquetas de ejes*)
+    Text[Rotate[Style["x3 (Nitrometano)", fsAxis, niceFont, colTicks],
+       Pi/2], {-0.09, 0.5}], 
+    Text[Style["x2 (1-dodecanol)", fsAxis, niceFont, 
+      colTicks], {0.5, -0.09}]}, 
+   PlotRange -> {{-0.12, 1.02}, {-0.12, 1.02}}, 
+   ImagePadding -> {{95, 25}, {70, 25}}, Background -> White];
+
+ternaryGrid = 
+  Graphics[{(*minor:más tenue y punteada*)AbsoluteThickness[0.7], 
+    Dashing[{0.012, 0.018}], 
+    Table[{colGridMin, Line[{{0, i}, {1 - i, i}}],(*x3=const*)
+      Line[{{i, 0}, {i, 1 - i}}],(*x2=const*)
+      Line[{{0, i}, {i, 0}}]},(*x1=
+     const*){i, 0.05, 0.95, 0.05}],(*major:un poco más marcada,
+    sin dash*)Dashing[{}], AbsoluteThickness[1.0], 
+    Table[{colGridMaj, Line[{{0, i}, {1 - i, i}}], 
+      Line[{{i, 0}, {i, 1 - i}}], Line[{{0, i}, {i, 0}}]}, {i, 0.1, 
+      0.9, 0.1}]}];
+
+
+Diagrama
+
+
+
+
+PhaseDiagramLLLE[feed_List, step6_Association] := 
+ Module[{F, z, pZ, xI, xII, xIII, pI, pII, pIII}, F = Total[feed];
+  z = N@feed/F;
+  xI = N@step6["xI"]; xII = N@step6["xII"]; xIII = N@step6["xIII"];
+  pZ = toXY[z];
+  pI = toXY[xI]; pII = toXY[xII]; pIII = toXY[xIII];
+  Show[ternaryGrid, ternaryBase, 
+   Graphics[{(*triángulo de equilibrio*)colTie, 
+     Line[{pI, pII, pIII, pI}],(*puntos+
+     etiquetas*){colI, AbsolutePointSize[16], Point[pI], 
+      Text[Style["I", fsTag, Bold, niceFont, colI], 
+       pI + {0.03, 0.03}]}, {colII, AbsolutePointSize[16], Point[pII],
+       Text[Style["II", fsTag, Bold, niceFont, colII], 
+       pII + {0.03, 0.03}]}, {colIII, AbsolutePointSize[16], 
+      Point[pIII], 
+      Text[Style["III", fsTag, Bold, niceFont, colIII], 
+       pIII + {0.03, 0.03}]},(*punto global*){Black, 
+      AbsolutePointSize[16], Point[pZ], 
+      Text[Style["z", fsTag, Bold, niceFont, Black], 
+       pZ + {0.03, 0.03}]}}], 
+   PlotRange -> {{-0.12, 1.02}, {-0.12, 1.02}}, ImageSize -> 1400]]
+
+PhaseDiagramLLLE[feed, step6]
+
+
