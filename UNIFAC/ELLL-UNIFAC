@@ -180,10 +180,9 @@ Step3Dom12[feed_List, bins_Association, K3init_ : 1.] :=
    zDom1 = f1/F12;
    h = (zDom1 - x1Poor12)/(x1Rich12 - x1Poor12);
    h = Clip[h, {0.01, 0.99}];
-   (*fase I:rica en 1;fase II:pobre en 1 (en el sub-sistema 1-2)*)
-   n1I = h*F12*x1Rich12; n2I = h*F12 - n1I;
-   n1II = (1 - h)*F12*x1Poor12; n2II = (1 - h)*F12 - n1II;
-   LI0 = n1I + n2I; LII0 = n1II + n2II;
+  n1I = h*F12*x1Rich12; n2I = h*F12 - n1I;
+n1II = (1 - h)*F12*x1Poor12; n2II = (1 - h)*F12 - n1I
+LI0 = n1I + n2I; LII0 = n1II + n2II;
 
    If[Abs[K3 - 1.] < 10.^-12, n3I = f3*LI0/(LI0 + LII0); 
     n3I = Clip[n3I, {eps, f3 - eps}];, 
