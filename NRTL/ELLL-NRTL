@@ -18,24 +18,18 @@ Genero las matrices de tau_ij y G_ij :
 
 tauMat = {{0, A12/T, A13/T}, {A21/T, 0, A23/T}, {A31/T, A32/T, 0}};
 
-GMat = {{1, Exp[-alpha12*A12/T], 
-    Exp[-alpha13*A13/T]}, {Exp[-alpha21*A21/T], 1, 
-    Exp[-alpha23*A23/T]}, {Exp[-alpha31*A31/T], Exp[-alpha32*A32/T], 
-    1}};
+GMat = {{1, Exp[-alpha12*A12/T], Exp[-alpha13*A13/T]}, {Exp[-alpha21*A21/T], 1, Exp[-alpha23*A23/T]}, {Exp[-alpha31*A31/T], Exp[-alpha32*A32/T], 1}};
 
 Función NRTL:
 
-lnGammaNRTL[i_, x_List] /; VectorQ[x, NumericQ] := 
-  Module[{n = 3, tau = tauMat, G = GMat, denomI, term1, term2, 
-    denomJ}, denomI = Sum[x[[k]]*G[[k, i]], {k, 1, n}];
-   term1 = Sum[x[[j]]*tau[[j, i]]*G[[j, i]], {j, 1, n}]/denomI;
-   term2 = Sum[denomJ = Sum[x[[k]]*G[[k, j]], {k, 1, n}];
-     x[[j]]*
-      G[[i, j]]/
-       denomJ*(tau[[i, j]] - 
-        Sum[x[[m]]*tau[[m, j]]*G[[m, j]], {m, 1, n}]/denomJ), {j, 1, 
-      n}];
-   term1 + term2];
+lnGammaNRTL[i_, x_List] /; VectorQ[x, NumericQ] := Module[{n = 3, tau = tauMat, G = GMat, denomI, term1, term2, denomJ}, denomI = Sum[x[[k]]*G[[k, i]], {k, 1, n}];
+term1 = Sum[x[[j]]*tau[[j, i]]*G[[j, i]], {j, 1, n}]/denomI;
+term2 = Sum[denomJ = Sum[x[[k]]*G[[k, j]], {k, 1, n}];
+x[[j]]*G[[i, j]]/denomJ*(tau[[i, j]] - Sum[x[[m]]*tau[[m, j]]*G[[m, j]], {m, 1, n}]/denomJ), {j, 1, n}];
+
+term1 + term2];
+
+
 
 Pares binarios:
 
@@ -67,174 +61,139 @@ bins = <|"12" -> {x1alpha12, x1beta12},"13" -> {x1alpha13, x1beta13},"23" -> {x2
 
 Paso 3: 
 
-Step3Dom[feed_List, bins_Association] := 
-  Module[{f1, f2, f3, F12, x1Poor12, x1Rich12, zDom1, h, n1I, n2I, 
-    n1II, n2II, lI, lII, LI0, LII0, x1Poor13, x1Rich13, x2Poor23, 
-    x2Rich23, x3PoorDom1, x3PoorDom2, K3, f3loc, n3I, n3II, 
-    sol}, {f1, f2, f3} = N@feed;
-   F12 = f1 + f2; 
-   {x1Poor12, x1Rich12} = bins["12"] (*Aquí debo fijar el par dominante*);
-   zDom1 = f1/F12;
-   h = (zDom1 - x1Poor12)/(x1Rich12 - x1Poor12);
-   n1I = h*F12*x1Rich12;
-   n2I = h*F12 - n1I;
-   n1II = (1 - h)*F12*x1Poor12;
-   n2II = (1 - h)*F12 - n1II;
-   lI = {n1I, n2I, 0.0};
-   lII = {n1II, n2II, 0.0};
-   LI0 = n1I + n2I;
-   LII0 = n1II + n2II;
-   {x1Poor13, x1Rich13} = bins["13"];
-   {x2Poor23, x2Rich23} = bins["23"];
-   x3PoorDom1 = 1 - x1Rich13;
-   x3PoorDom2 = 1 - x2Rich23;
-   K3 = x3PoorDom1/x3PoorDom2;
-   f3loc = f3;
-   sol = 
-    FindRoot[((n3I/(LI0 + n3I))/((f3loc - n3I)/(LII0 + f3loc - 
-             n3I))) - K3 == 0, {n3I, f3loc/2.}];
-   n3I = n3I /. sol;
-   n3II = f3loc - n3I;
-   lI[[3]] = n3I;
-   lII[[3]] = n3II;
-   <|"h" -> h, "lI" -> lI, "lII" -> lII, "K3_init" -> K3|>];
+Step3Dom[feed_List, bins_Association] := Module[{f1, f2, f3, F12, x1Poor12, x1Rich12, zDom1, h, n1I, n2I, n1II, n2II, lI, lII, LI0, LII0, x1Poor13, x1Rich13, x2Poor23, x2Rich23, x3PoorDom1, x3PoorDom2, K3, f3loc, n3I, n3II, sol}, {f1, f2, f3} = N@feed;
+F12 = f1 + f2; 
+{x1Poor12, x1Rich12} = bins["12"] (*Aquí debo fijar el par dominante*);
+zDom1 = f1/F12;
+h = (zDom1 - x1Poor12)/(x1Rich12 - x1Poor12);
+n1I = h*F12*x1Rich12;
+n2I = h*F12 - n1I;
+n1II = (1 - h)*F12*x1Poor12;
+n2II = (1 - h)*F12 - n1II;
+lI = {n1I, n2I, 0.0};
+lII = {n1II, n2II, 0.0};
+LI0 = n1I + n2I;
+LII0 = n1II + n2II;
+{x1Poor13, x1Rich13} = bins["13"];
+{x2Poor23, x2Rich23} = bins["23"];
+x3PoorDom1 = 1 - x1Rich13;
+x3PoorDom2 = 1 - x2Rich23;
+K3 = x3PoorDom1/x3PoorDom2;
+f3loc = f3;
+sol = 
+FindRoot[((n3I/(LI0 + n3I))/((f3loc - n3I)/(LII0 + f3loc - n3I))) - K3 == 0, {n3I, f3loc/2.}];
+n3I = n3I /. sol;
+n3II = f3loc - n3I;
+lI[[3]] = n3I;
+lII[[3]] = n3II;
+<|"h" -> h, "lI" -> lI, "lII" -> lII, "K3_init" -> K3|>];
 
 Paso 4:
 
-Step4LLE[feed_List, step3_] := 
-  Module[{f1, f2, f3, F, lI0, n1I0, n2I0, n3I0, eps, DGtotalFlows, 
-    sol, rules, n1Iopt, n2Iopt, n3Iopt, n1IIopt, n2IIopt, n3IIopt, L1,
-     L2, xI, xII, DGmin}, {f1, f2, f3} = N@feed;
-   F = f1 + f2 + f3;
-   lI0 = N@step3["lI"];
-   {n1I0, n2I0, n3I0} = lI0;
-   eps = 10.^-8;
-   DGtotalFlows[n1I_?NumericQ, n2I_?NumericQ, n3I_?NumericQ] := 
-    Module[{n1II, n2II, n3II, L1, L2, xI, xII, gI, gII}, 
-     n1II = f1 - n1I;
-     n2II = f2 - n2I;
-     n3II = f3 - n3I;
-     L1 = n1I + n2I + n3I;
-     L2 = n1II + n2II + n3II;
-     If[Min[{n1I, n2I, n3I, n1II, n2II, n3II, L1, L2}] <= eps, 
-      Return[10.^8]];
-     xI = {n1I, n2I, n3I}/L1;
-     xII = {n1II, n2II, n3II}/L2;
-     If[Min[Join[xI, xII]] <= eps, Return[10.^8]];
-     gI = 
-      Sum[xI[[i]]*(Log[xI[[i]]] + lnGammaNRTL[i, xI]), {i, 1, 3}];
-     gII = 
-      Sum[xII[[i]]*(Log[xII[[i]]] + lnGammaNRTL[i, xII]), {i, 1, 3}];
-     (L1*gI + L2*gII)/F];
-   sol = 
-    FindMinimum[
-     DGtotalFlows[n1I, n2I, 
-      n3I], {{n1I, n1I0}, {n2I, n2I0}, {n3I, n3I0}}, 
-     Method -> {"InteriorPoint", "Tolerance" -> 10^-8}
-     
-     ];
-   DGmin = sol[[1]];
-   rules = sol[[2]];
-   n1Iopt = n1I /. rules;
-   n2Iopt = n2I /. rules;
-   n3Iopt = n3I /. rules;
-   n1IIopt = f1 - n1Iopt;
-   n2IIopt = f2 - n2Iopt;
-   n3IIopt = f3 - n3Iopt;
-   L1 = n1Iopt + n2Iopt + n3Iopt;
-   L2 = n1IIopt + n2IIopt + n3IIopt;
-   xI = {n1Iopt, n2Iopt, n3Iopt}/L1;
-   xII = {n1IIopt, n2IIopt, n3IIopt}/L2;
-   <|"Gmin" -> DGmin, "lI" -> {n1Iopt, n2Iopt, n3Iopt}, 
-    "lII" -> {n1IIopt, n2IIopt, n3IIopt}, "xI" -> xI, "xII" -> xII|>];
+Step4LLE[feed_List, step3_] := Module[{f1, f2, f3, F, lI0, n1I0, n2I0, n3I0, eps, DGtotalFlows, sol, rules, n1Iopt, n2Iopt, n3Iopt, n1IIopt, n2IIopt, n3IIopt, L1,L2, xI, xII, DGmin}, {f1, f2, f3} = N@feed;
+F = f1 + f2 + f3;
+lI0 = N@step3["lI"];
+{n1I0, n2I0, n3I0} = lI0;
+eps = 10.^-8;
+
+DGtotalFlows[n1I_?NumericQ, n2I_?NumericQ, n3I_?NumericQ] := Module[{n1II, n2II, n3II, L1, L2, xI, xII, gI, gII}, 
+n1II = f1 - n1I;
+n2II = f2 - n2I;
+n3II = f3 - n3I;
+L1 = n1I + n2I + n3I;
+L2 = n1II + n2II + n3II;
+
+If[Min[{n1I, n2I, n3I, n1II, n2II, n3II, L1, L2}] <= eps, Return[10.^8]];
+xI = {n1I, n2I, n3I}/L1;
+xII = {n1II, n2II, n3II}/L2;
+
+If[Min[Join[xI, xII]] <= eps, Return[10.^8]];
+gI = Sum[xI[[i]]*(Log[xI[[i]]] + lnGammaNRTL[i, xI]), {i, 1, 3}];
+
+gII = Sum[xII[[i]]*(Log[xII[[i]]] + lnGammaNRTL[i, xII]), {i, 1, 3}];
+(L1*gI + L2*gII)/F];
+
+sol = FindMinimum[DGtotalFlows[n1I, n2I, n3I], {{n1I, n1I0}, {n2I, n2I0}, {n3I, n3I0}}, 
+Method -> {"InteriorPoint", "Tolerance" -> 10^-8}];
+
+
+DGmin = sol[[1]];
+rules = sol[[2]];
+n1Iopt = n1I /. rules;
+n2Iopt = n2I /. rules;
+n3Iopt = n3I /. rules;
+n1IIopt = f1 - n1Iopt;
+n2IIopt = f2 - n2Iopt;
+n3IIopt = f3 - n3Iopt;
+L1 = n1Iopt + n2Iopt + n3Iopt;
+L2 = n1IIopt + n2IIopt + n3IIopt;
+xI = {n1Iopt, n2Iopt, n3Iopt}/L1;
+xII = {n1IIopt, n2IIopt, n3IIopt}/L2;
+<|"Gmin" -> DGmin, "lI" -> {n1Iopt, n2Iopt, n3Iopt}, "lII" -> {n1IIopt, n2IIopt, n3IIopt}, "xI" -> xI, "xII" -> xII|>];
 
 
 Paso 5: 
 
-Step5LLLE[feed_List, bins_, step4_Association] := 
-  Module[{f1, f2, f3, F, z,xI, xII, 
-    xIII,A, b, phi, 
-    phiSafe,L1, L2, 
-    L3,lI, lII, 
-    lIII}, {f1, f2, f3} = N@feed;
-   F = f1 + f2 + f3;
-   z = {f1, f2, f3}/F;
-   xI = N@step4["xI"];
-   xII = N@step4["xII"];
-   xIII = 0.5 Normalize[xI + 0.2 xII];
-   xIII = xIII/Total[xIII];
+Step5LLLE[feed_List, bins_, step4_Association] := Module[{f1, f2, f3, F, z,xI, xII, xIII,A, b, phi, phiSafe,L1, L2, L3,lI, lII, lIII}, {f1, f2, f3} = N@feed;
+F = f1 + f2 + f3;
+z = {f1, f2, f3}/F;
+xI = N@step4["xI"];
+xII = N@step4["xII"];
+xIII = 0.5 Normalize[xI + 0.2 xII];
+xIII = xIII/Total[xIII];
 
    
-   A = {{xI[[1]], xII[[1]], xIII[[1]]}, {xI[[2]], xII[[2]], 
-      xIII[[2]]}, {1., 1., 1.}};
-   b = {z[[1]], z[[2]], 1.};
+A = {{xI[[1]], xII[[1]], xIII[[1]]}, {xI[[2]], xII[[2]], xIII[[2]]}, {1., 1., 1.}};
+b = {z[[1]], z[[2]], 1.};
 
 
-   phi = Quiet@Check[LinearSolve[A, b], $Failed];
-   If[phi === $Failed || Not@VectorQ[phi, NumericQ] || Min[phi] < 0, 
-    phiSafe = {0.4, 0.3, 0.3}, phiSafe = phi];
-   {L1, L2, L3} = phiSafe*F;
-   lI = L1*xI;
-   lII = L2*xII;
-   lIII = L3*xIII;
+phi = Quiet@Check[LinearSolve[A, b], $Failed];
+If[phi === $Failed || Not@VectorQ[phi, NumericQ] || Min[phi] < 0, phiSafe = {0.4, 0.3, 0.3}, phiSafe = phi];
+{L1, L2, L3} = phiSafe*F;
+lI = L1*xI;
+lII = L2*xII;
+lIII = L3*xIII;
 
 DGphase[x_List] := Module[{eps = 10^-10},
-  If[Min[x] <= eps || Abs[Total[x] - 1] > 10^-6,
-    10^6,
-    Sum[x[[i]]*(Log[x[[i]]] + lnGammaNRTL[i, x]), {i, 1, 3}]
-  ]
-];
+If[Min[x] <= eps || Abs[Total[x] - 1] > 10^-6, 10^6,Sum[x[[i]]*(Log[x[[i]]] + lnGammaNRTL[i, x]), {i, 1, 3}]]];
+
+
 
 DG3[x1_?NumericQ, x2_?NumericQ] := Module[{x3 = 1 - x1 - x2},
-  DGphase[{x1, x2, x3}]
-];
+DGphase[{x1, x2, x3}]];
 
 DG3safe[x1_?NumericQ, x2_?NumericQ] := Module[{x3 = 1 - x1 - x2},
-  If[x1 <= 0 || x2 <= 0 || x3 <= 0, Indeterminate, DG3[x1, x2]]
-];
+If[x1 <= 0 || x2 <= 0 || x3 <= 0, Indeterminate, DG3[x1, x2]]];
 
-DGtotalFlows3[nI_List, nII_List, nIII_List] := Module[
-  {eps = 10^-10, LI, LII, LIII, xI, xII, xIII},
-  LI = Total[nI]; LII = Total[nII]; LIII = Total[nIII];
-  If[Min[{LI, LII, LIII}] <= eps || Min[Join[nI, nII, nIII]] <= eps,
-    10^6,
-    xI = nI/LI; xII = nII/LII; xIII = nIII/LIII;
-    LI*DGphase[xI] + LII*DGphase[xII] + LIII*DGphase[xIII]
-  ]
-];
+DGtotalFlows3[nI_List, nII_List, nIII_List] := Module[{eps = 10^-10, LI, LII, LIII, xI, xII, xIII}, LI = Total[nI]; LII = Total[nII]; LIII = Total[nIII];
+If[Min[{LI, LII, LIII}] <= eps || Min[Join[nI, nII, nIII]] <= eps,10^6,xI = nI/LI; xII = nII/LII; xIII = nIII/LIII;
+LI*DGphase[xI] + LII*DGphase[xII] + LIII*DGphase[xIII]]];
 
 
 
 Paso 6:
 
 
-Step6LLLE[feed_List, step5_Association] := 
-  Module[{f1, f2, f3, eps, n1I, n2I, n3I, n1II, n2II, n3II, nI, nII, 
-    nIII, LI, LII, LIII, xI, xII, xIII, obj, sol, 
-    Gmin}, {f1, f2, f3} = N@feed;
-   eps = 10.^-6;
-   obj[n1I_?NumericQ, n2I_?NumericQ, n3I_?NumericQ, n1II_?NumericQ, 
-     n2II_?NumericQ, n3II_?NumericQ] := 
-    Module[{nIloc, nIIloc, nIIIloc}, nIloc = {n1I, n2I, n3I};
-     nIIloc = {n1II, n2II, n3II};
-     nIIIloc = {f1, f2, f3} - nIloc - nIIloc;
-     DGtotalFlows[nIloc, nIIloc, nIIIloc]];
-   (*minimización con restricciones físicas*)
-   sol = NMinimize[{obj[n1I, n2I, n3I, n1II, n2II, n3II],(*nIII>=eps*)
-      f1 - n1I - n1II >= eps && f2 - n2I - n2II >= eps && 
-       f3 - n3I - n3II >= eps}, {{n1I, eps, f1 - eps}, {n2I, eps, 
-       f2 - eps}, {n3I, eps, f3 - eps}, {n1II, eps, f1 - eps}, {n2II, 
-       eps, f2 - eps}, {n3II, eps, f3 - eps}}];
-   Gmin = sol[[1]];
-   {n1I, n2I, n3I, n1II, n2II, 
-     n3II} = {n1I, n2I, n3I, n1II, n2II, n3II} /. sol[[2]];
-   nI = {n1I, n2I, n3I};
-   nII = {n1II, n2II, n3II};
-   nIII = {f1, f2, f3} - nI - nII;
-   LI = Total[nI]; LII = Total[nII]; LIII = Total[nIII];
-   xI = nI/LI; xII = nII/LII; xIII = nIII/LIII;
-   <|"Gmin" -> Gmin, "lI" -> nI, "lII" -> nII, "lIII" -> nIII, 
-    "xI" -> xI, "xII" -> xII, "xIII" -> xIII|>];
+Step6LLLE[feed_List, step5_Association] := Module[{f1, f2, f3, eps, n1I, n2I, n3I, n1II, n2II, n3II, nI, nII, nIII, LI, LII, LIII, xI, xII, xIII, obj, sol, Gmin}, {f1, f2, f3} = N@feed;
+eps = 10.^-6;
+obj[n1I_?NumericQ, n2I_?NumericQ, n3I_?NumericQ, n1II_?NumericQ, n2II_?NumericQ, n3II_?NumericQ] := Module[{nIloc, nIIloc, nIIIloc}, nIloc = {n1I, n2I, n3I};
+nIIloc = {n1II, n2II, n3II};
+nIIIloc = {f1, f2, f3} - nIloc - nIIloc;
+     
+
+DGtotalFlows[nIloc, nIIloc, nIIIloc]];
+(*minimización con restricciones físicas*)
+sol = NMinimize[{obj[n1I, n2I, n3I, n1II, n2II, n3II],(*nIII>=eps*)
+f1 - n1I - n1II >= eps && f2 - n2I - n2II >= eps && 
+f3 - n3I - n3II >= eps}, {{n1I, eps, f1 - eps}, {n2I, eps, f2 - eps}, {n3I, eps, f3 - eps}, {n1II, eps, f1 - eps}, {n2II, eps, f2 - eps}, {n3II, eps, f3 - eps}}];
+Gmin = sol[[1]];
+{n1I, n2I, n3I, n1II, n2II, n3II} = {n1I, n2I, n3I, n1II, n2II, n3II} /. sol[[2]];
+nI = {n1I, n2I, n3I};
+nII = {n1II, n2II, n3II};
+nIII = {f1, f2, f3} - nI - nII;
+LI = Total[nI]; LII = Total[nII]; LIII = Total[nIII];
+xI = nI/LI; xII = nII/LII; xIII = nIII/LIII;
+<|"Gmin" -> Gmin, "lI" -> nI, "lII" -> nII, "lIII" -> nIII, "xI" -> xI, "xII" -> xII, "xIII" -> xIII|>];
 
 
 Diagrama ternario:
@@ -256,126 +215,69 @@ colIII = RGBColor[0.10, 0.60, 0.20];
 
 fmt01[x_] := ToString@NumberForm[x, {2, 1}, NumberPadding -> {"", "0"}];
 
-ternaryBase = Graphics[
-  {
-    EdgeForm[Directive[colBorder, AbsoluteThickness[2.5]]],
-    FaceForm[None],
-    Polygon[{{0, 1}, {0, 0}, {1, 0}}],
+ternaryBase = Graphics[{EdgeForm[Directive[colBorder, AbsoluteThickness[2.5]]],FaceForm[None],Polygon[{{0, 1}, {0, 0}, {1, 0}}],
+Table[{colTicks,Text[Style[fmt01[j], fsTick, niceFont, colTicks], {-0.035, j}, {1, 0}],Text[Style[fmt01[j], fsTick, niceFont, colTicks], {j, -0.035}, {0, 1}]},{j, 0.2, 0.8, 0.2}],
+Text[Rotate[Style["x3 (Agua)", fsAxis, niceFont, colTicks], Pi/2], {-0.09, 0.5}],Text[Style["x2 (Nitrometano)", fsAxis, niceFont, colTicks], {0.5, -0.09}]},PlotRange -> {{-0.12, 1.02}, {-0.12, 1.02}},
+ImagePadding -> {{95, 25}, {70, 25}},Background -> White];
 
-    Table[
-      {colTicks,
-       Text[Style[fmt01[j], fsTick, niceFont, colTicks], {-0.035, j}, {1, 0}],
-       Text[Style[fmt01[j], fsTick, niceFont, colTicks], {j, -0.035}, {0, 1}]},
-      {j, 0.2, 0.8, 0.2}
-    ],
 
-    Text[Rotate[Style["x3 (Agua)", fsAxis, niceFont, colTicks], Pi/2], {-0.09, 0.5}],
-    Text[Style["x2 (Nitrometano)", fsAxis, niceFont, colTicks], {0.5, -0.09}]
-  },
-  PlotRange -> {{-0.12, 1.02}, {-0.12, 1.02}},
-  ImagePadding -> {{95, 25}, {70, 25}},
-  Background -> White
-];
+ternaryGrid = Graphics[{AbsoluteThickness[0.7], Dashing[{0.012, 0.018}],Table[{colGridMin,Line[{{0, i}, {1 - i, i}}],  (* x3 = const *)
+Line[{{i, 0}, {i, 1 - i}}],  (* x2 = const *)
+Line[{{0, i}, {i, 0}}]       (* x1 = const *)},{i, 0.05, 0.95, 0.05}],Dashing[{}], AbsoluteThickness[1.0],Table[{colGridMaj,Line[{{0, i}, {1 - i, i}}],Line[{{i, 0}, {i, 1 - i}}],
+Line[{{0, i}, {i, 0}}]},{i, 0.1, 0.9, 0.1}]}];
 
-ternaryGrid = Graphics[
-  {
-    AbsoluteThickness[0.7], Dashing[{0.012, 0.018}],
-    Table[
-      {colGridMin,
-       Line[{{0, i}, {1 - i, i}}],  (* x3 = const *)
-       Line[{{i, 0}, {i, 1 - i}}],  (* x2 = const *)
-       Line[{{0, i}, {i, 0}}]       (* x1 = const *)
-      },
-      {i, 0.05, 0.95, 0.05}
-    ],
-    Dashing[{}], AbsoluteThickness[1.0],
-    Table[
-      {colGridMaj,
-       Line[{{0, i}, {1 - i, i}}],
-       Line[{{i, 0}, {i, 1 - i}}],
-       Line[{{0, i}, {i, 0}}]},
-      {i, 0.1, 0.9, 0.1}
-    ]
-  }
-];
 
-PhaseDiagramLLLE[feed_List, step6_Association] := Module[
-  {F, z, pZ, xI, xII, xIII, pI, pII, pIII},
-  F = Total[feed];
-  z = N@feed/F;
 
-  xI = N@step6["xI"]; xII = N@step6["xII"]; xIII = N@step6["xIII"];
-  pZ = toXY[z]; pI = toXY[xI]; pII = toXY[xII]; pIII = toXY[xIII];
+PhaseDiagramLLLE[feed_List, step6_Association] := Module[{F, z, pZ, xI, xII, xIII, pI, pII, pIII},
+F = Total[feed];
+z = N@feed/F;
 
-  Show[
-    ternaryGrid, ternaryBase,
-    Graphics[{
-      colTie, Line[{pI, pII, pIII, pI}],
-      {colI,   AbsolutePointSize[16], Point[pI],   Text[Style["I",   fsTag, Bold, niceFont, colI],   pI + {0.03, 0.03}]},
-      {colII,  AbsolutePointSize[16], Point[pII],  Text[Style["II",  fsTag, Bold, niceFont, colII],  pII + {0.03, 0.03}]},
-      {colIII, AbsolutePointSize[16], Point[pIII], Text[Style["III", fsTag, Bold, niceFont, colIII], pIII + {0.03, 0.03}]},
-      {Black,  AbsolutePointSize[16], Point[pZ],   Text[Style["z",   fsTag, Bold, niceFont, Black],  pZ + {0.03, 0.03}]}
-    }],
-    PlotRange -> {{-0.12, 1.02}, {-0.12, 1.02}},
-    ImageSize -> 1200
-  ]
-];
+xI = N@step6["xI"]; xII = N@step6["xII"]; xIII = N@step6["xIII"];
+pZ = toXY[z]; pI = toXY[xI]; pII = toXY[xII]; pIII = toXY[xIII];
+
+Show[ternaryGrid, ternaryBase,Graphics[{colTie, Line[{pI, pII, pIII, pI}],
+{colI,   AbsolutePointSize[16], Point[pI],   Text[Style["I",   fsTag, Bold, niceFont, colI],   pI + {0.03, 0.03}]},
+{colII,  AbsolutePointSize[16], Point[pII],  Text[Style["II",  fsTag, Bold, niceFont, colII],  pII + {0.03, 0.03}]},
+{colIII, AbsolutePointSize[16], Point[pIII], Text[Style["III", fsTag, Bold, niceFont, colIII], pIII + {0.03, 0.03}]},
+{Black,  AbsolutePointSize[16], Point[pZ],   Text[Style["z",   fsTag, Bold, niceFont, Black],  pZ + {0.03, 0.03}]}}],
+PlotRange -> {{-0.12, 1.02}, {-0.12, 1.02}},
+ImageSize -> 1200]];
 
 Plano:
 
-CommonTangentPlanePlot[step6_Association] := Module[
-  {x1I, x2I, x1II, x2II, x1III, x2III, gI, gII, gIII,
-   aNum, b1Num, b2Num, plano, deltaPlot, labelStyle, tickStyle, surf, planePlot, pts},
+CommonTangentPlanePlot[step6_Association] := Module[{x1I, x2I, x1II, x2II, x1III, x2III, gI, gII, gIII,aNum, b1Num, b2Num, plano, deltaPlot, labelStyle, tickStyle, surf, planePlot, pts},
 
-  {x1I,   x2I}   = step6["xI"][[{1, 2}]];
-  {x1II,  x2II}  = step6["xII"][[{1, 2}]];
-  {x1III, x2III} = step6["xIII"][[{1, 2}]];
+{x1I,   x2I}   = step6["xI"][[{1, 2}]];
+{x1II,  x2II}  = step6["xII"][[{1, 2}]];
+{x1III, x2III} = step6["xIII"][[{1, 2}]];
 
-  gI   = DG3[x1I, x2I];
-  gII  = DG3[x1II, x2II];
-  gIII = DG3[x1III, x2III];
+gI   = DG3[x1I, x2I];
+gII  = DG3[x1II, x2II];
+gIII = DG3[x1III, x2III];
 
-  {aNum, b1Num, b2Num} = {a, b1, b2} /. First@Solve[
-    {
-      a + b1*x1I   + b2*x2I   == gI,
-      a + b1*x1II  + b2*x2II  == gII,
-      a + b1*x1III + b2*x2III == gIII
-    },
-    {a, b1, b2}
-  ];
 
-  plano[x1_, x2_] := aNum + b1Num*x1 + b2Num*x2;
+{aNum, b1Num, b2Num} = {a, b1, b2} /. First@Solve[{ a + b1*x1I   + b2*x2I   == gI, a + b1*x1II  + b2*x2II  == gII, a + b1*x1III + b2*x2III == gIII},{a, b1, b2}];
 
-  deltaPlot = 10.^-6;
-  labelStyle = {FontFamily -> "Times", FontSize -> 50};
-  tickStyle  = {FontFamily -> "Times", FontSize -> 50};
+plano[x1_, x2_] := aNum + b1Num*x1 + b2Num*x2;
 
-  surf = Plot3D[
-    DG3safe[x1, x2], {x1, 0, 1}, {x2, 0, 1},
-    RegionFunction -> Function[{x1, x2, z}, x1 >= deltaPlot && x2 >= deltaPlot && x1 + x2 <= 1 - deltaPlot],
-    Mesh -> None, PlotRange -> All,
-    ColorFunction -> "GreenBrownTerrain", ColorFunctionScaling -> True,
-    AxesLabel -> {Style["x1", labelStyle], Style["x2", labelStyle], Style["ΔG/RT", labelStyle]},
-    TicksStyle -> tickStyle, BaseStyle -> tickStyle,
-    BoxRatios -> {1, 1, 0.6}, ImageSize -> 2000
-  ];
+deltaPlot = 10.^-6;
+labelStyle = {FontFamily -> "Times", FontSize -> 50};
+tickStyle  = {FontFamily -> "Times", FontSize -> 50};
 
-  planePlot = Plot3D[
-    plano[x1, x2], {x1, 0, 1}, {x2, 0, 1},
-    RegionFunction -> Function[{x1, x2, z}, x1 >= deltaPlot && x2 >= deltaPlot && x1 + x2 <= 1 - deltaPlot],
-    Mesh -> None, PlotRange -> All,
-    PlotStyle -> Directive[GrayLevel[0.1], Opacity[0.15]],
-    BoxRatios -> {1, 1, 0.6}, ImageSize -> 2000
-  ];
+surf = Plot3D[DG3safe[x1, x2], {x1, 0, 1}, {x2, 0, 1}, RegionFunction -> Function[{x1, x2, z}, x1 >= deltaPlot && x2 >= deltaPlot && x1 + x2 <= 1 - deltaPlot],
+Mesh -> None, PlotRange -> All, ColorFunction -> "GreenBrownTerrain", ColorFunctionScaling -> True,
+AxesLabel -> {Style["x1", labelStyle], Style["x2", labelStyle], Style["ΔG/RT", labelStyle]},
+TicksStyle -> tickStyle, BaseStyle -> tickStyle,
+BoxRatios -> {1, 1, 0.6}, ImageSize -> 2000];
 
-  pts = Graphics3D[{
-    {colI,   AbsolutePointSize[22], Point[{x1I,   x2I,   gI}],   Text[Style["I",   30, Bold, colI,   Background -> White], {x1I,   x2I,   gI   + 0.05}]},
+planePlot = Plot3D[plano[x1, x2], {x1, 0, 1}, {x2, 0, 1}, RegionFunction -> Function[{x1, x2, z}, x1 >= deltaPlot && x2 >= deltaPlot && x1 + x2 <= 1 - deltaPlot],
+Mesh -> None, PlotRange -> All, PlotStyle -> Directive[GrayLevel[0.1], Opacity[0.15]], BoxRatios -> {1, 1, 0.6}, ImageSize -> 2000];
+
+pts = Graphics3D[{{colI,   AbsolutePointSize[22], Point[{x1I,   x2I,   gI}],   Text[Style["I",   30, Bold, colI,   Background -> White], {x1I,   x2I,   gI   + 0.05}]},
     {colII,  AbsolutePointSize[22], Point[{x1II,  x2II,  gII}],  Text[Style["II",  30, Bold, colII,  Background -> White], {x1II,  x2II,  gII  + 0.05}]},
-    {colIII, AbsolutePointSize[22], Point[{x1III, x2III, gIII}], Text[Style["III", 30, Bold, colIII, Background -> White], {x1III, x2III, gIII + 0.05}]}
-  }];
+    {colIII, AbsolutePointSize[22], Point[{x1III, x2III, gIII}], Text[Style["III", 30, Bold, colIII, Background -> White], {x1III, x2III, gIII + 0.05}]}}];
 
-  Show[surf, planePlot, pts, ImageSize -> 2000]
-];
+Show[surf, planePlot, pts, ImageSize -> 2000]];
 
 
 
