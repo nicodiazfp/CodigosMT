@@ -42,9 +42,7 @@ WorkingPrecision -> 20]];
 Interpolación y función de la tangente:
 
 
-DGinterp = 
-Interpolation[
-Table[{x, \[CapitalDelta]G[x]}, {x, 0.0001, 0.999, 0.0001}]];
+DGinterp = Interpolation[Table[{x, \[CapitalDelta]G[x]}, {x, 0.0001, 0.999, 0.0001}]];
 tangente[x_] := DGinterp[xa] + m*(x - xa);
 
 colCurva = Black;
@@ -52,22 +50,10 @@ colTang = RGBColor[0.8, 0., 0.];
 colPtos = Red;
 colEje = GrayLevel[0.2];
 
-Show[Plot[DGinterp[x], {x, 0, 1}, 
-PlotStyle -> Directive[colCurva, AbsoluteThickness[4]], 
-Frame -> True, 
-FrameLabel -> {Style["x₁ (Etilenglicol)", 40, FontFamily -> "Times"], 
-    Style["\[CapitalDelta]G/RT", 40, FontFamily -> "Times"]}, 
-  Ticks -> {Table[i, {i, 0, 1, 0.1}], Automatic}, 
-  BaseStyle -> {FontFamily -> "Times", 40}, 
-  AxesStyle -> Directive[colEje, AbsoluteThickness[2.5]], 
-  FrameStyle -> Directive[colEje, AbsoluteThickness[2.5]], 
-  ImageSize -> 1300], 
- Graphics[{Directive[colTang, Dashed, AbsoluteThickness[3]], 
-   Line[{{xa, DGinterp[xa]}, {xb, DGinterp[xb]}}]}], 
- Graphics[{Directive[colPtos, PointSize[0.022]], 
-   Point[{xa, DGinterp[xa]}], Point[{xb, DGinterp[xb]}]}], 
- PlotRange -> All]
-
+Show[Plot[DGinterp[x], {x, 0, 1}, PlotStyle -> Directive[colCurva, AbsoluteThickness[4]], Frame -> True, FrameLabel -> {Style["x₁ (Etilenglicol)", 40, FontFamily -> "Times"], Style["\[CapitalDelta]G/RT", 40, FontFamily -> "Times"]}, 
+Ticks -> {Table[i, {i, 0, 1, 0.1}], Automatic}, BaseStyle -> {FontFamily -> "Times", 40}, AxesStyle -> Directive[colEje, AbsoluteThickness[2.5]], 
+FrameStyle -> Directive[colEje, AbsoluteThickness[2.5]],ImageSize -> 1300], Graphics[{Directive[colTang, Dashed, AbsoluteThickness[3]], Line[{{xa, DGinterp[xa]}, {xb, DGinterp[xb]}}]}], 
+Graphics[{Directive[colPtos, PointSize[0.022]], Point[{xa, DGinterp[xa]}], Point[{xb, DGinterp[xb]}]}], PlotRange -> All]
 
 
 Resultados:
