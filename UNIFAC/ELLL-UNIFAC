@@ -297,9 +297,8 @@ Text[Rotate[Style["x3 (Nitrometano)", fsAxis, niceFont, colTicks], Pi/2], {-0.09
 PlotRange -> {{-0.12, 1.02}, {-0.12, 1.02}}, 
 ImagePadding -> {{95, 25}, {70, 25}}, Background -> White];
 
-ternaryGrid = Graphics[{(*minor:más tenue y punteada*)AbsoluteThickness[0.7], Dashing[{0.012, 0.018}], Table[{colGridMin, Line[{{0, i}, {1 - i, i}}],(*x3=const*)
-Line[{{i, 0}, {i, 1 - i}}],(*x2=const*)
-Line[{{0, i}, {i, 0}}]},(*x1=const*){i, 0.05, 0.95, 0.05}],(*major:un poco más marcada, sin dash*)Dashing[{}], AbsoluteThickness[1.0], 
+ternaryGrid = Graphics[{AbsoluteThickness[0.7], Dashing[{0.012, 0.018}], Table[{colGridMin, Line[{{0, i}, {1 - i, i}}],
+Line[{{i, 0}, {i, 1 - i}}],Line[{{0, i}, {i, 0}}]},{i, 0.05, 0.95, 0.05}], Dashing[{}], AbsoluteThickness[1.0], 
 Table[{colGridMaj, Line[{{0, i}, {1 - i, i}}], Line[{{i, 0}, {i, 1 - i}}], Line[{{0, i}, {i, 0}}]}, {i, 0.1, 0.9, 0.1}]}];
 
 
@@ -313,7 +312,7 @@ z = N@feed/F;
 xI = N@step6["xI"]; xII = N@step6["xII"]; xIII = N@step6["xIII"];
 pZ = toXY[z];
 pI = toXY[xI]; pII = toXY[xII]; pIII = toXY[xIII];
-Show[ternaryGrid, ternaryBase, Graphics[{(*triángulo de equilibrio*)colTie, Line[{pI, pII, pIII, pI}],(*puntos+etiquetas*){colI, AbsolutePointSize[16], Point[pI], 
+Show[ternaryGrid, ternaryBase, Graphics[{colTie, Line[{pI, pII, pIII, pI}],{colI, AbsolutePointSize[16], Point[pI], 
 Text[Style["I", fsTag, Bold, niceFont, colI], pI + {0.03, 0.03}]}, {colII, AbsolutePointSize[16], Point[pII],Text[Style["II", fsTag, Bold, niceFont, colII], pII + {0.03, 0.03}]}, {colIII, AbsolutePointSize[16], 
 Point[pIII], 
 Text[Style["III", fsTag, Bold, niceFont, colIII], pIII + {0.03, 0.03}]},(*punto global*){Black, AbsolutePointSize[16], Point[pZ], Text[Style["z", fsTag, Bold, niceFont, Black], pZ + {0.03, 0.03}]}}], 
