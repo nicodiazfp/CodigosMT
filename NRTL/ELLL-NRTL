@@ -182,8 +182,7 @@ nIIIloc = {f1, f2, f3} - nIloc - nIIloc;
      
 
 DGtotalFlows[nIloc, nIIloc, nIIIloc]];
-(*minimización con restricciones físicas*)
-sol = NMinimize[{obj[n1I, n2I, n3I, n1II, n2II, n3II],(*nIII>=eps*)
+sol = NMinimize[{obj[n1I, n2I, n3I, n1II, n2II, n3II],
 f1 - n1I - n1II >= eps && f2 - n2I - n2II >= eps && 
 f3 - n3I - n3II >= eps}, {{n1I, eps, f1 - eps}, {n2I, eps, f2 - eps}, {n3I, eps, f3 - eps}, {n1II, eps, f1 - eps}, {n2II, eps, f2 - eps}, {n3II, eps, f3 - eps}}];
 Gmin = sol[[1]];
@@ -221,9 +220,9 @@ Text[Rotate[Style["x3 (Agua)", fsAxis, niceFont, colTicks], Pi/2], {-0.09, 0.5}]
 ImagePadding -> {{95, 25}, {70, 25}},Background -> White];
 
 
-ternaryGrid = Graphics[{AbsoluteThickness[0.7], Dashing[{0.012, 0.018}],Table[{colGridMin,Line[{{0, i}, {1 - i, i}}],  (* x3 = const *)
-Line[{{i, 0}, {i, 1 - i}}],  (* x2 = const *)
-Line[{{0, i}, {i, 0}}]       (* x1 = const *)},{i, 0.05, 0.95, 0.05}],Dashing[{}], AbsoluteThickness[1.0],Table[{colGridMaj,Line[{{0, i}, {1 - i, i}}],Line[{{i, 0}, {i, 1 - i}}],
+ternaryGrid = Graphics[{AbsoluteThickness[0.7], Dashing[{0.012, 0.018}],Table[{colGridMin,Line[{{0, i}, {1 - i, i}}],
+Line[{{i, 0}, {i, 1 - i}}], 
+Line[{{0, i}, {i, 0}}]},{i, 0.05, 0.95, 0.05}],Dashing[{}], AbsoluteThickness[1.0],Table[{colGridMaj,Line[{{0, i}, {1 - i, i}}],Line[{{i, 0}, {i, 1 - i}}],
 Line[{{0, i}, {i, 0}}]},{i, 0.1, 0.9, 0.1}]}];
 
 
